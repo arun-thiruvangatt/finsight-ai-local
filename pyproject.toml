@@ -1,0 +1,19 @@
+[project]
+name = "finsight-ai"
+version = "1.0.0"
+description = "AI personal finance intelligence platform"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "UP"]
+ignore = ["B008", "E501", "E731", "B905", "UP046", "UP047"]
