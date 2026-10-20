@@ -70,3 +70,50 @@ def test_chunking_and_hashing_embedder():
     dot = lambda x, y: sum(p * q for p, q in zip(x, y, strict=True))  # noqa: E731
     assert len(a) == 384 and abs(dot(a, a) - 1) < 1e-6
     assert dot(a, b) > dot(a, c)
+
+
+def test_extract_text_ocr_only_scanned_pdf_pages(monkeypatch, tmp_path):
+    import sys
+    from types import ModuleType, SimpleNamespace
+
+    import pypdf
+
+    class Page:
+        def __init__(self, text):
+            self.text = text
+
+        def extract_text(self):
+            return self.text
+
+    monkeypatch.setattr(
+        pypdf, "PdfReader", lambda _: SimpleNamespace(pages=[Page("searchable text"), Page(None), Page(" ")])
+    )
+    converted_pages = []
+    pdf2image = ModuleType("pdf2image")
+
+    def convert_from_path(pdf_path, *, dpi, first_page, last_page, timeout):
+        converted_pages.append(first_page)
+        return [first_page]
+
+    pdf2image.convert_from_path = convert_from_path
+    pytesseract = ModuleType("pytesseract")
+    pytesseract.image_to_string = lambda image, *, lang, timeout: f"recognized page {image}"
+    pytesseract.TesseractNotFoundError = RuntimeError
+    monkeypatch.setitem(sys.modules, "pdf2image", pdf2image)
+    monkeypatch.setitem(sys.modules, "pytesseract", pytesseract)
+
+    pdf_path = tmp_path / "statement.pdf"
+    pdf_path.touch()
+    assert rag.extract_text(pdf_path) == "searchable text\n\nrecognized page 2\n\nrecognized page 3"
+    assert converted_pages == [2, 3]
+
+
+def test_extract_text_skips_ocr_for_searchable_pdf(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    import pypdf
+
+    monkeypatch.setattr(pypdf, "PdfReader", lambda _: SimpleNamespace(pages=[SimpleNamespace(extract_text=lambda: "statement text")]))
+    pdf_path = tmp_path / "statement.pdf"
+    pdf_path.touch()
+    assert rag.extract_text(pdf_path) == "statement text"

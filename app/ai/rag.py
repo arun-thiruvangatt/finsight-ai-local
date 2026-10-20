@@ -19,7 +19,32 @@ def extract_text(path: str | Path) -> str:
     p = Path(path)
     if p.suffix.lower() == ".pdf":
         from pypdf import PdfReader
-        return "\n\n".join((page.extract_text() or "") for page in PdfReader(str(p)).pages)
+        pages = PdfReader(str(p)).pages
+        page_texts = [(page.extract_text() or "") for page in pages]
+        pages_to_ocr = [i for i, text in enumerate(page_texts, start=1) if not text.strip()]
+        if pages_to_ocr:
+            try:
+                import pytesseract
+                from pdf2image import convert_from_path
+            except ImportError as exc:
+                raise RuntimeError(
+                    "Scanned PDF OCR requires pdf2image, pytesseract, Poppler, and Tesseract."
+                ) from exc
+
+            for page_number in pages_to_ocr:
+                images = convert_from_path(
+                    str(p), dpi=200, first_page=page_number, last_page=page_number, timeout=60
+                )
+                if images:
+                    try:
+                        page_texts[page_number - 1] = pytesseract.image_to_string(
+                            images[0], lang="eng", timeout=60
+                        )
+                    except pytesseract.TesseractNotFoundError as exc:
+                        raise RuntimeError(
+                            "Tesseract is required to OCR scanned PDFs. Install Tesseract and its English language data."
+                        ) from exc
+        return "\n\n".join(page_texts)
     return p.read_text(encoding="utf-8", errors="replace")
 
 

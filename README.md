@@ -40,7 +40,7 @@ Key decisions
 
 ## Tech stack
 Python 3.12+, FastAPI, Pydantic v2, SQLModel/SQLAlchemy 2, Alembic, PostgreSQL 16 + pgvector, psycopg 3, Redis, Celery, pandas,
-pypdf, httpx, prometheus-client, pytest; React 18, TypeScript, Vite, Recharts; Docker, Nginx.
+pypdf, pdf2image, pytesseract, httpx, prometheus-client, pytest; React 18, TypeScript, Vite, Recharts; Docker, Nginx.
 
 ## Project structure
 `app/api` routes · `app/services` business logic · `app/ai` provider, tools, orchestrator, RAG · `app/workers` Celery ·
@@ -63,6 +63,7 @@ Copy `.env.example` to `.env` (the setup script does this and generates `JWT_SEC
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+sudo dnf install tesseract tesseract-langpack-eng poppler-utils  # Fedora; OCR for scanned PDFs
 pip install -r requirements-dev.txt
 docker compose up -d postgres redis      # PostgreSQL+pgvector and Redis
 alembic upgrade head
