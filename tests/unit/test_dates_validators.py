@@ -21,6 +21,8 @@ def test_parse_dates():
     assert parse_date_flexible("03/09/2026") == date(2026, 9, 3)
     assert parse_date_flexible("03/09/2026", dayfirst=False) == date(2026, 3, 9)
     assert parse_date_flexible("03 Sep 2026") == date(2026, 9, 3)
+    assert parse_date_flexible("29-Jun-17") == date(2017, 6, 29)
+    assert parse_date_flexible("5-Jul-17") == date(2017, 7, 5)
     with pytest.raises(ValueError):
         parse_date_flexible("not a date")
 
